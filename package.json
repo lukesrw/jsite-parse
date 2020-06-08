@@ -1,0 +1,33 @@
+{
+    "name": "jsite-parse",
+    "version": "1.2.0",
+    "description": "",
+    "main": "./lib/src/parse",
+    "scripts": {
+        "build": "tsc",
+        "test": "npm run build && mocha lib/src/test"
+    },
+    "keywords": [],
+    "author": "Luke Wilson <lukesrw@gmail.com>",
+    "license": "ISC",
+    "dependencies": {
+        "csv-parse": "^4.10.1",
+        "formidable": "^1.2.2",
+        "qs": "^6.9.4",
+        "xml2js": "^0.4.23"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com/@lukesrw"
+    },
+    "devDependencies": {
+        "@types/chai": "^4.2.11",
+        "@types/chai-as-promised": "^7.1.2",
+        "@types/formidable": "^1.0.31",
+        "@types/mocha": "^7.0.2",
+        "@types/qs": "^6.9.3",
+        "@types/xml2js": "^0.4.5",
+        "chai": "^4.2.0",
+        "chai-as-promised": "^7.1.1",
+        "mocha": "^7.2.0"
+    }
+}
