@@ -16,7 +16,7 @@ const DEFAULT_GUESS_ORDER = ["json", "xml", "csv", "query", "url"];
 /**
  * Parse some JSON data
  *
- * @param {string} json_data to be parsed
+ * @param {*} json_data to be parsed
  * @returns {Promise} pending promise for parsed data
  */
 export function json(json_data: any): Promise<any> {
@@ -36,7 +36,7 @@ export function json(json_data: any): Promise<any> {
 /**
  * Parse some XML data
  *
- * @param {string} xml_data to be parsed
+ * @param {*} xml_data to be parsed
  * @returns {Promise} pending promise for parsed data
  */
 export function xml(xml_data: any): Promise<object> {
@@ -52,7 +52,8 @@ export function xml(xml_data: any): Promise<object> {
 /**
  * Parse some CSV data
  *
- * @param csv_data to be parsed
+ * @param {*} csv_data to be parsed
+ * @param {boolean} [is_strict=false] whether to be strict in pre-validating
  * @returns {Promise} pending promise for parsed data
  */
 export function csv(csv_data: any, is_strict: boolean = false): Promise<Array<Array<any>>> {
@@ -77,6 +78,8 @@ export function csv(csv_data: any, is_strict: boolean = false): Promise<Array<Ar
  * Parse some query string data
  *
  * @param {string} query_data to be parsed
+ * @param {boolean} [is_strict=false] whether to be strict in pre-validating
+ * @returns {Promise} Pending promise with parsed query string
  */
 export function query(query_data: string, is_strict: boolean = false): Promise<ParsedQs> {
     return new Promise((resolve, reject) => {
@@ -95,8 +98,9 @@ export function query(query_data: string, is_strict: boolean = false): Promise<P
 /**
  * Parse a URL string
  *
- * @param {string} url to be parsed
+ * @param {any} [url] to be parsed
  * @param {boolean} [is_strict=false] whether to be strict (reject if starts with '/')
+ * @returns {Promise} Pending promise with URL
  */
 export function url(url?: any, is_strict: boolean = false): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -114,6 +118,7 @@ export function url(url?: any, is_strict: boolean = false): Promise<any> {
  * Parse a content type
  *
  * @param {string} content_type to be parsed
+ * @returns {string} Parsed content type
  */
 export function contentType(content_type: string): string {
     content_type = content_type || "";
@@ -168,6 +173,12 @@ export function guess(data: any, order: Array<string> | string = DEFAULT_GUESS_O
     });
 }
 
+/**
+ *
+ * @param {*} data for type guessing
+ * @param {Array|string} [order] to attempt guesses
+ * @returns {Promise} pending promise for parsed data type
+ */
 export function guessType(data: any, order: Array<string> | string = DEFAULT_GUESS_ORDER): Promise<string> {
     return new Promise((resolve, reject) => {
         if (data === "" || typeof data !== "string") {
@@ -202,6 +213,12 @@ export function guessType(data: any, order: Array<string> | string = DEFAULT_GUE
     });
 }
 
+/**
+ * Parse a request object
+ *
+ * @param {IncomingMessage} request to be parsed
+ * @returns {Promise} Pending promise with parsed data
+ */
 export function request(
     request: IncomingMessage
 ): Promise<{
