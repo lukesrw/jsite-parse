@@ -3,7 +3,7 @@
  */
 import parseCsv = require("csv-parse");
 import { IncomingForm } from "formidable";
-import { parse as parseQuery, ParsedQs } from "qs";
+import { parse as parseQuery } from "qs";
 import { parseStringPromise as parseXML } from "xml2js";
 import { parse as parseUrl } from "url";
 import { IncomingMessage } from "http";
@@ -81,8 +81,13 @@ export function csv(csv_data: any, is_strict: boolean = false): Promise<Array<Ar
  * @param {boolean} [is_strict=false] whether to be strict in pre-validating
  * @returns {Promise} Pending promise with parsed query string
  */
-export function query(query_data: string, is_strict: boolean = false): Promise<ParsedQs> {
+export function query(query_data: string | null, is_strict: boolean = false): Promise<any> {
     return new Promise((resolve, reject) => {
+        /**
+         * @see https://github.com/lukesrw/jsite-parse/issues/1
+         */
+        if (query_data === null && !is_strict) return resolve({});
+
         if (typeof query_data !== "string") return resolve(query_data);
 
         if (query_data.includes("#")) return reject("Refusing to parse query, contains '#'");
