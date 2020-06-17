@@ -7,6 +7,8 @@
         "outDir": "lib/src",
         "rootDir": "src",
         "removeComments": true,
+        "declaration": true,
+        "declarationMap": true,
 
         /* Strict Type-Checking Options */
         "strict": true,
