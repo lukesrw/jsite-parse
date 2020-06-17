@@ -102,7 +102,7 @@ Object.keys(tests).forEach(content_type => {
     });
 });
 
-describe("Data Types", () => {
+describe("Generic Tests", () => {
     Object.keys(tests).forEach(content_type => {
         let test_name = content_type.toUpperCase();
         if (["query", "guess"].indexOf(content_type) > -1) {
@@ -135,6 +135,20 @@ describe("Data Types", () => {
                     });
                 }
             });
+        });
+    });
+});
+
+describe("Specific Tests", () => {
+    context("Query", () => {
+        /**         *
+         * @see https://github.com/lukesrw/jsite-parse/issues/1
+         */
+        it("Return {} when given null in non-strict mode (default args)", () => {
+            return chai.expect(parse.query(null)).to.eventually.deep.equal({});
+        });
+        it("Return {} when given null in non-strict mode (is_strict arg)", () => {
+            return chai.expect(parse.query(null, false)).to.eventually.deep.equal({});
         });
     });
 });
