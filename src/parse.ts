@@ -12,6 +12,10 @@ import parseCsv from "./modules/csv-parse";
 import { parseForm } from "./modules/formidable";
 import { parse as parseQuery } from "qs";
 import { parseStringPromise as parseXML } from "xml2js";
+
+/**
+ * Interfaces
+ */
 import { ParsedRequest } from "./interfaces/parse";
 
 /**
