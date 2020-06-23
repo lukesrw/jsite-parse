@@ -3,14 +3,16 @@
  */
 import { parse as parseUrl } from "url";
 import { IncomingMessage } from "http";
+import { once } from "events";
 
 /**
  * Npm packages
  */
-import parseCsv = require("csv-parse");
-import { IncomingForm } from "formidable";
+import parseCsv from "./modules/csv-parse";
+import { parseForm } from "./modules/formidable";
 import { parse as parseQuery } from "qs";
 import { parseStringPromise as parseXML } from "xml2js";
+import { ParsedRequest } from "./interfaces/parse";
 
 /**
  * Contents
@@ -23,18 +25,12 @@ const DEFAULT_GUESS_ORDER = ["json", "xml", "csv", "query", "url"];
  * @param {*} json_data to be parsed
  * @returns {Promise} pending promise for parsed data
  */
-export function json(json_data: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-        if (typeof json_data !== "string") {
-            json_data = JSON.stringify(json_data);
-        }
+export async function json(json_data: any): Promise<any> {
+    if (typeof json_data !== "string") {
+        json_data = JSON.stringify(json_data);
+    }
 
-        try {
-            return resolve(JSON.parse(json_data));
-        } catch (error) {
-            return reject(error);
-        }
-    });
+    return JSON.parse(json_data);
 }
 
 /**
@@ -43,14 +39,14 @@ export function json(json_data: any): Promise<any> {
  * @param {*} xml_data to be parsed
  * @returns {Promise} pending promise for parsed data
  */
-export function xml(xml_data: any): Promise<object> {
-    return new Promise((resolve, reject) => {
-        if (typeof xml_data !== "string") return resolve(xml_data);
+export async function xml(xml_data: any): Promise<object> {
+    if (typeof xml_data !== "string") return xml_data;
 
-        return parseXML(xml_data)
-            .then(data => (data ? resolve(data) : reject("Unable to parse XML")))
-            .catch(reject);
-    });
+    let data = await parseXML(xml_data);
+
+    if (data) return data;
+
+    throw new Error("Unable to parse XML");
 }
 
 /**
@@ -60,22 +56,20 @@ export function xml(xml_data: any): Promise<object> {
  * @param {boolean} [is_strict=false] whether to be strict in pre-validating
  * @returns {Promise} pending promise for parsed data
  */
-export function csv(csv_data: any, is_strict: boolean = false): Promise<any[][]> {
-    return new Promise((resolve, reject) => {
-        if (Array.isArray(csv_data)) {
-            return resolve(csv_data.map(item => (Array.isArray(item) ? item : [item])));
-        }
+export async function csv(csv_data: any, is_strict: boolean = false): Promise<any[][]> {
+    if (Array.isArray(csv_data)) {
+        return csv_data.map(item => (Array.isArray(item) ? item : [item]));
+    }
 
-        if (typeof csv_data !== "string") {
-            return reject("Unable to parse CSV, data isn't a string");
-        }
+    if (typeof csv_data !== "string") {
+        throw new Error("Unable to parse CSV, data isn't a string");
+    }
 
-        if (is_strict && !csv_data.includes(",") && !csv_data.includes("\n")) {
-            return reject("Refusing to parse CSV, single-word data");
-        }
+    if (is_strict && !csv_data.includes(",") && !csv_data.includes("\n")) {
+        throw new Error("Refusing to parse CSV, single-word data");
+    }
 
-        return parseCsv(csv_data, (error: any, data: any) => (error ? reject(error) : resolve(data)));
-    });
+    return parseCsv(csv_data);
 }
 
 /**
@@ -85,23 +79,25 @@ export function csv(csv_data: any, is_strict: boolean = false): Promise<any[][]>
  * @param {boolean} [is_strict=false] whether to be strict in pre-validating
  * @returns {Promise} Pending promise with parsed query string
  */
-export function query(query_data: string | null, is_strict: boolean = false): Promise<any> {
-    return new Promise((resolve, reject) => {
-        /**
-         * @see https://github.com/lukesrw/jsite-parse/issues/1
-         */
-        if (query_data === null && !is_strict) return resolve({});
+export async function query(query_data: string | null, is_strict: boolean = false): Promise<any> {
+    /**
+     * @see https://github.com/lukesrw/jsite-parse/issues/1
+     */
+    if (query_data === null && !is_strict) return {};
 
-        if (typeof query_data !== "string") return resolve(query_data);
+    if (typeof query_data !== "string") return query_data;
 
-        if (query_data.includes("#")) return reject("Refusing to parse query, contains '#'");
+    if (query_data.includes("#")) {
+        throw new Error("Refusing to parse query, contains '#'");
+    }
 
-        if (is_strict && query_data.startsWith("/")) return reject("Refusing to parse query, starts with '/'");
+    if (is_strict && query_data.startsWith("/")) {
+        throw new Error("Refusing to parse query, starts with '/'");
+    }
 
-        if (query_data.startsWith("?")) query_data = query_data.substr(1);
+    if (query_data.startsWith("?")) query_data = query_data.substr(1);
 
-        return resolve(parseQuery(query_data));
-    });
+    return parseQuery(query_data);
 }
 
 /**
@@ -111,16 +107,16 @@ export function query(query_data: string | null, is_strict: boolean = false): Pr
  * @param {boolean} [is_strict=false] whether to be strict (reject if starts with '/')
  * @returns {Promise} Pending promise with URL
  */
-export function url(url?: any, is_strict: boolean = false): Promise<any> {
-    return new Promise((resolve, reject) => {
-        if (typeof url !== "string") return resolve(url);
+export async function url(url?: any, is_strict: boolean = false): Promise<any> {
+    if (typeof url !== "string") return url;
 
-        url = url || "/";
+    url = url || "/";
 
-        if (is_strict && !url.startsWith("/")) return reject("Refusing to parse URL, doesn't start with '/'");
+    if (is_strict && !url.startsWith("/")) {
+        throw new Error("Refusing to parse URL, doesn't start with '/'");
+    }
 
-        return resolve(parseUrl(url, true));
-    });
+    return parseUrl(url, true);
 }
 
 /**
@@ -228,64 +224,32 @@ export function guessType(data: any, order: string[] | string = DEFAULT_GUESS_OR
  * @param {IncomingMessage} request to be parsed
  * @returns {Promise} Pending promise with parsed data
  */
-export function request(
-    request: IncomingMessage
-): Promise<{
-    get: object;
-    [method: string]: object;
-    files?: any;
-}> {
-    return new Promise((resolve, reject) => {
-        if (!(request instanceof IncomingMessage)) {
-            return reject("Unable to parse request");
-        }
+export async function request(request: IncomingMessage): Promise<ParsedRequest> {
+    if (!(request instanceof IncomingMessage)) {
+        throw new Error("Unable to parse request");
+    }
 
-        return url(request.url)
-            .then(request_url => query(request_url.search))
-            .then(get => {
-                let method = (request.method || "get").toLowerCase();
+    let method = (request.method || "get").toLowerCase();
+    let request_url = await url(request.url);
+    let get = await query(request_url.search);
+    let data_parsed;
 
-                if (
-                    Object.prototype.hasOwnProperty.call(request, "headers") &&
-                    typeof request.headers["content-type"] === "string" &&
-                    request.headers["content-type"].includes("multipart/form-data")
-                ) {
-                    const form = new IncomingForm();
-                    form.multiples = true;
+    if (
+        Object.prototype.hasOwnProperty.call(request, "headers") &&
+        typeof request.headers["content-type"] === "string" &&
+        request.headers["content-type"].includes("multipart/form-data")
+    ) {
+        data_parsed = await parseForm(request);
+    } else {
+        let data: string = "";
+        request.on("data", chunk => (data += chunk));
 
-                    try {
-                        return form.parse(request, (error, fields, files) => {
-                            if (error) return reject(error);
+        await once(request, "end");
 
-                            return resolve(
-                                Object.assign(
-                                    {
-                                        [method]: fields,
-                                        get
-                                    },
-                                    Object.values(files).length ? { files } : {}
-                                )
-                            );
-                        });
-                    } catch (error) {
-                        return reject(error);
-                    }
-                }
+        data_parsed = {
+            [method]: await guess(data, request.headers["content-type"])
+        };
+    }
 
-                let data = "";
-                request.on("data", chunk => (data += chunk));
-                request.on("end", () => {
-                    return guess(data, request.headers["content-type"])
-                        .then(data => {
-                            return {
-                                [method]: data,
-                                get
-                            };
-                        })
-                        .then(resolve)
-                        .catch(reject);
-                });
-            })
-            .catch(reject);
-    });
+    return Object.assign(data_parsed, get);
 }
