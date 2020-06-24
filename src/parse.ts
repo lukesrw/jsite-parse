@@ -183,7 +183,7 @@ export async function guess(data: any, order: string[] | string = DEFAULT_GUESS_
 export async function guessType(data: any, order: string[] | string = DEFAULT_GUESS_ORDER): Promise<string> {
     if (typeof data !== "string") return data;
 
-    if (data === "") return {};
+    if (data === "") return "unknown";
 
     order = order || DEFAULT_GUESS_ORDER;
 
@@ -196,7 +196,7 @@ export async function guessType(data: any, order: string[] | string = DEFAULT_GU
     order = order.map(contentType).filter(content_type => Object.prototype.hasOwnProperty.call(exports, content_type));
 
     if (order.length === 0) {
-        throw new Error("Unable to parse");
+        return "unknown";
     }
 
     try {
