@@ -148,38 +148,30 @@ export function contentType(content_type: string): string {
  * @param {Array|string} [order] to attempt guesses
  * @returns {Promise} pending promise for parsed data
  */
-export function guess(data: any, order: string[] | string = DEFAULT_GUESS_ORDER): Promise<any> {
-    return new Promise((resolve, reject) => {
-        if (typeof data !== "string") return resolve(data);
+export async function guess(data: any, order: string[] | string = DEFAULT_GUESS_ORDER): Promise<any> {
+    if (typeof data !== "string") return data;
 
-        if (data === "") return resolve({});
+    if (data === "") return {};
 
-        order = order || DEFAULT_GUESS_ORDER;
+    order = order || DEFAULT_GUESS_ORDER;
 
-        if (typeof order === "string") order = [order];
+    if (typeof order === "string") order = [order];
 
-        if (!Array.isArray(order)) return reject("Order isn't an array");
+    if (!Array.isArray(order)) {
+        throw new Error("Order isn't an array");
+    }
 
-        if (
-            !order
-                .filter(content_type => typeof content_type === "string" && DEFAULT_GUESS_ORDER.includes(content_type))
-                .some(content_type => {
-                    content_type = contentType(content_type);
+    order = order.map(contentType).filter(content_type => Object.prototype.hasOwnProperty.call(exports, content_type));
 
-                    if (Object.prototype.hasOwnProperty.call(exports, content_type)) {
-                        return exports[content_type](data, true)
-                            .then(resolve)
-                            .catch(() => guess(data, order.slice(1)))
-                            .then(resolve)
-                            .catch(reject);
-                    }
+    if (order.length === 0) {
+        throw new Error("Unable to parse");
+    }
 
-                    return false;
-                })
-        ) {
-            return reject("Unable to parse");
-        }
-    });
+    try {
+        return await exports[order[0]](data, true);
+    } catch (ignore) {
+        return await guess(data, order.slice(1));
+    }
 }
 
 /**
@@ -188,38 +180,32 @@ export function guess(data: any, order: string[] | string = DEFAULT_GUESS_ORDER)
  * @param {Array|string} [order] to attempt guesses
  * @returns {Promise} pending promise for parsed data type
  */
-export function guessType(data: any, order: string[] | string = DEFAULT_GUESS_ORDER): Promise<string> {
-    return new Promise((resolve, reject) => {
-        if (data === "" || typeof data !== "string") {
-            return reject("Unable to guess type (bad data)");
-        }
+export async function guessType(data: any, order: string[] | string = DEFAULT_GUESS_ORDER): Promise<string> {
+    if (typeof data !== "string") return data;
 
-        order = order || DEFAULT_GUESS_ORDER;
+    if (data === "") return {};
 
-        if (typeof order === "string") order = [order];
+    order = order || DEFAULT_GUESS_ORDER;
 
-        if (!Array.isArray(order)) return reject("Order isn't an array");
+    if (typeof order === "string") order = [order];
 
-        if (
-            !order
-                .filter(content_type => typeof content_type === "string" && DEFAULT_GUESS_ORDER.includes(content_type))
-                .some(content_type => {
-                    content_type = contentType(content_type);
+    if (!Array.isArray(order)) {
+        throw new Error("Order isn't an array");
+    }
 
-                    if (Object.prototype.hasOwnProperty.call(exports, content_type)) {
-                        return exports[content_type](data, true)
-                            .then(() => resolve(content_type))
-                            .catch(() => guessType(data, order.slice(1)))
-                            .then(resolve)
-                            .catch(reject);
-                    }
+    order = order.map(contentType).filter(content_type => Object.prototype.hasOwnProperty.call(exports, content_type));
 
-                    return false;
-                })
-        ) {
-            return resolve("unknown");
-        }
-    });
+    if (order.length === 0) {
+        throw new Error("Unable to parse");
+    }
+
+    try {
+        await exports[order[0]](data, true);
+
+        return order[0];
+    } catch (ignore) {
+        return await guessType(data, order.slice(1));
+    }
 }
 
 /**
