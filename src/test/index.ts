@@ -13,7 +13,7 @@ chai.use(chai_as_expected);
 /**
  * Self
  */
-import parse = require("../../src/parse");
+import parse = require("../parse");
 
 let tests: {
     [content_type: string]: {
