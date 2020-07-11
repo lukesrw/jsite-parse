@@ -4,8 +4,9 @@
     "description": "",
     "main": "./lib/src/parse",
     "scripts": {
-        "build": "tsc",
-        "test": "npm run build && mocha lib/src/test"
+        "clean": "node dist/clean",
+        "build": "npm run clean && tsc",
+        "test": "npm run build && mocha dist/src/test"
     },
     "keywords": [],
     "author": "Luke Wilson <lukesrw@gmail.com>",
