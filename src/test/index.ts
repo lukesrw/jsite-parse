@@ -1,3 +1,5 @@
+/*global describe context it*/
+
 /**
  * Node.js modules
  */
@@ -6,7 +8,7 @@ import { parse as parseUrl } from "url";
 /**
  * Npm packages (for testing)
  */
-import chai = require("chai");
+import * as chai from "chai";
 import chai_as_expected = require("chai-as-promised");
 chai.use(chai_as_expected);
 
@@ -23,40 +25,6 @@ let tests: {
         parse: Function;
     }[];
 } = {
-    json: [
-        {
-            fail: ["This isn't JSON", true],
-            in: ['{"json":{"this":"is","is":123,"my":{"test":["json","object"]}}}', true],
-            out: {
-                json: {
-                    this: "is",
-                    is: 123,
-                    my: {
-                        test: ["json", "object"]
-                    }
-                }
-            },
-            parse: parse.json
-        }
-    ],
-    xml: [
-        {
-            fail: ["This isn't XML", true],
-            in: ["<xml><this>is</this><is>123</is><my><test>xml</test><test>object</test></my></xml>", true],
-            out: {
-                xml: {
-                    this: ["is"],
-                    is: ["123"],
-                    my: [
-                        {
-                            test: ["xml", "object"]
-                        }
-                    ]
-                }
-            },
-            parse: parse.xml
-        }
-    ],
     csv: [
         {
             fail: ["This isn't a CSV", true],
@@ -68,14 +36,31 @@ let tests: {
             parse: parse.csv
         }
     ],
+    guess: [], // populated dynamically below
+    json: [
+        {
+            fail: ["This isn't JSON", true],
+            in: ['{"json":{"this":"is","is":123,"my":{"test":["json","object"]}}}', true],
+            out: {
+                json: {
+                    is: 123,
+                    my: {
+                        test: ["json", "object"]
+                    },
+                    this: "is"
+                }
+            },
+            parse: parse.json
+        }
+    ],
     query: [
         {
             fail: ["# This isn't a query string", true],
             in: ["this=is&is=123&my=query data", true],
             out: {
-                this: "is",
                 is: "123",
-                my: "query data"
+                my: "query data",
+                this: "is"
             },
             parse: parse.query
         }
@@ -88,7 +73,24 @@ let tests: {
             parse: parse.url
         }
     ],
-    guess: [] // populated dynamically below
+    xml: [
+        {
+            fail: ["This isn't XML", true],
+            in: ["<xml><this>is</this><is>123</is><my><test>xml</test><test>object</test></my></xml>", true],
+            out: {
+                xml: {
+                    is: ["123"],
+                    my: [
+                        {
+                            test: ["xml", "object"]
+                        }
+                    ],
+                    this: ["is"]
+                }
+            },
+            parse: parse.xml
+        }
+    ]
 };
 
 Object.keys(tests).forEach(content_type => {
@@ -128,7 +130,37 @@ describe("Generic Tests", () => {
                         return chai.expect(parse.guessType(test.in[0])).to.eventually.equal(content_type);
                     });
 
-                    it("Content Type", () => {
+                    it("Content Type (???)", () => {
+                        chai.expect(parse.contentType(content_type)).to.equal(content_type);
+                    });
+
+                    it("Content Type (text/???)", () => {
+                        chai.expect(parse.contentType(`text/${content_type}`)).to.equal(content_type);
+                    });
+
+                    it("Content Type (something+???)", () => {
+                        chai.expect(parse.contentType(`something+${content_type}`)).to.equal(content_type);
+                    });
+
+                    it("Content Type (text/something+???)", () => {
+                        chai.expect(parse.contentType(`text/something+${content_type}`)).to.equal(content_type);
+                    });
+
+                    it("Content Type (???; charset=UTF-8)", () => {
+                        chai.expect(parse.contentType(`${content_type}; charset=UTF-8`)).to.equal(content_type);
+                    });
+
+                    it("Content Type (text/???; charset=UTF-8)", () => {
+                        chai.expect(parse.contentType(`text/${content_type}; charset=UTF-8`)).to.equal(content_type);
+                    });
+
+                    it("Content Type (something+???; charset=UTF-8)", () => {
+                        chai.expect(parse.contentType(`something+${content_type}; charset=UTF-8`)).to.equal(
+                            content_type
+                        );
+                    });
+
+                    it("Content Type (text/something+???; charset=UTF-8)", () => {
                         chai.expect(parse.contentType(`text/something+${content_type}; charset=UTF-8`)).to.equal(
                             content_type
                         );
