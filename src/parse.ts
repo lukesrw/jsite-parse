@@ -153,9 +153,16 @@ export async function guess(data: any, order: string[] | string = DEFAULT_GUESS_
 
     if (data === "") return {};
 
+    // convert string to array
     order = order || DEFAULT_GUESS_ORDER;
+    if (!Array.isArray(order)) {
+        order = typeof order === "string" ? [order] : [];
+        // after the prompt, try all possible
+        order = order.concat(DEFAULT_GUESS_ORDER);
+    }
 
-    if (typeof order === "string") order = [order];
+    // remove any duplicates
+    order = [...new Set(order)];
 
     if (!Array.isArray(order)) {
         throw new Error("Order isn't an array");
