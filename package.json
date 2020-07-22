@@ -2,7 +2,7 @@
     "name": "jsite-parse",
     "version": "1.3.0",
     "description": "",
-    "main": "./lib/src/parse",
+    "main": "./dist/src/parse",
     "scripts": {
         "clean": "node dist/clean",
         "build": "npm run clean && tsc",
