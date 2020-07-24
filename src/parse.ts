@@ -248,5 +248,7 @@ export async function request(request: IncomingMessage): Promise<ParsedRequest> 
         };
     }
 
-    return Object.assign(data_parsed, get);
+    return Object.assign(data_parsed, {
+        get
+    });
 }
